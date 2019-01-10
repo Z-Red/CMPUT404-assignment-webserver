@@ -1,5 +1,6 @@
 #  coding: utf-8
 import socketserver
+import os
 
 # Copyright 2013 Abram Hindle, Eddie Antonio Santos
 #
@@ -32,10 +33,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
     def handle(self):
         self.data = self.request.recv(1024).strip()
         print("Got a request of: %s\n" % self.data)
-        #self.request.sendall(bytearray("OK",'utf-8'))
-
-        # TODO: Need way of not hard-coding valid paths
-        paths = ["/", "/base.css", "/index.html", "/deep/deep.css", "/deep/index.html"]
 
         # TODO: NEED PROPER CITATION
         # The following section has been adapted from the following...
@@ -59,41 +56,50 @@ class MyWebServer(socketserver.BaseRequestHandler):
             output[key] = values
         ########################################################################
 
-        # # FOR TESTING
-        # for key, values in output.items():
-        #     print("KEY: " + key + ", ")
-        #     print("VALUES: ")
-        #     for v in values:
-        #         print(v + " ")
-        #     print("\n")
 
-        # Append status code to response
         response = protocol + " "
+
+        # Determine if we can process the request method
+        status = " "
         if (method != "GET"):
-            response += "405 Method Not Allowed"
-        elif path not in paths:
-            response +=  "404 Not Found"
+            status = "405 Method Not Allowed\r\n"
+            self.request.sendall(bytearray(response + status, "utf-8"))
+            return
+
+        # Determine if the file requested exists
+        file_name = ""
+        path = "./www" + path
+        print("PATH: " + path + "\n")
+        if os.path.isdir(path):
+            file_name = "index.html"
+        elif os.path.isfile(path):
+            file_name = path.split("/")[-1]
         else:
-            response += "200 OK"
-        response += "\r\n"
+            status = "404 Not Found\r\n"
+            self.request.sendall(bytearray(response + status, "utf-8"))
+            return
+
+        # The request method and requested file are valid
+        status = "200 OK\r\n"
 
         # Append content type to response
         content_type = "Content-Type: "
-        if len(path.split(".")) >= 2:
-            file_type = path.split(".")[1]
-            if file_type == "html":
-                content_type += "text/html; charset=utf-8"
-            elif file_type == "css":
-                content_type += "text/css; charset=utf-8"
+        #if len(path.split(".")) >= 2:
+        file_type = file_name.split(".")[1]
+        if file_type == "html":
+            content_type += "text/html; charset=utf-8"
+        elif file_type == "css":
+            content_type += "text/css; charset=utf-8"
         content_type += "\r\n"
 
         # TODO: Append content length to response
 
-        # TODO: Append actual content
-        response += content_type
+        # TODO: Get the actual content
+        content = ""
 
-        print("\n" + response + "\n")
+        response +=  status + content_type + content
         self.request.sendall(bytearray(response, "utf-8"))
+        return
 
 
 if __name__ == "__main__":
