@@ -42,7 +42,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         # Date: Thursday, January 10, 2019
         ########################################################################
         fields = self.data.split(b"\r\n")
-        method, path, protocol = fields[0].decode("ASCII").split(" ")
+        method, url_path, protocol = fields[0].decode("ASCII").split(" ")
         headers = fields[1:] #ignore the GET / HTTP/1.1
         output = {}
 
@@ -67,36 +67,32 @@ class MyWebServer(socketserver.BaseRequestHandler):
             return
 
         # Determine if the file requested exists
-        file_name = ""
-        path = "./www" + path
-        if os.path.isdir(path):
-            file_name = "index.html"
-            path += file_name
-        elif os.path.isfile(path):
-            file_name = path.split("/")[-1]
-        else:
+        if not file_or_dir_exists(url_path):
             status = "404 Not Found\r\n"
             self.request.sendall(bytearray(response + status, "utf-8"))
             return
+
+        # Determine the localized path to the requested file
+        local_path = get_local_path_to_file(url_path)
 
         # The request method and requested file are valid
         status = "200 OK\r\n"
 
         # Append content type to response
-        content_type = get_content_type(file_name)
+        content_type = get_content_type(local_path)
 
         # TODO: Append content length to response
 
         # TODO: Get the actual content
-        content = get_content(path)
+        content = get_content(local_path)
         response +=  status + content_type + content
         self.request.sendall(bytearray(response, "utf-8"))
         return
 
-def get_content_type(file_name):
+def get_content_type(local_path):
         content_type = "Content-Type: "
-        if len(file_name.split(".")) > 1:
-            file_type = file_name.split(".")[1]
+        if len(local_path.split(".")) > 1:
+            file_type = local_path.split(".")[1]
             if file_type == "html":
                 content_type += "text/html; charset=utf-8"
             elif file_type == "css":
@@ -106,8 +102,35 @@ def get_content_type(file_name):
         content_type += "\r\n"
         return content_type
 
-def get_content(path):
-        return "\r\n" + open(path, "r").read()
+def get_content(local_path):
+        return "\r\n" + open(local_path, "r").read()
+
+def get_local_path_to_file(url_path):
+    local_path = "./www" + url_path
+    if os.path.isfile(local_path):
+        return local_path
+    else:
+        assert(os.path.isdir(local_path))
+        return local_path + "index.html"
+
+def get_file_name(url_path):
+        file_name = ""
+        local_path = "./www" + url_path
+        if os.path.isdir(local_path):
+            file_name = "index.html"
+            local_path += file_name
+        elif os.path.isfile(path):
+            file_name = path.split("/")[-1]
+        return file_name
+
+def file_or_dir_exists(url_path):
+        local_path = "./www" + url_path
+        if os.path.isdir(local_path) or os.path.isfile(local_path):
+            return True
+        else:
+            return False
+
+# TODO: Add check for method acceptance (for future applications)
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
