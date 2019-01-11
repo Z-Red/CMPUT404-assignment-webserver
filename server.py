@@ -69,9 +69,9 @@ class MyWebServer(socketserver.BaseRequestHandler):
         # Determine if the file requested exists
         file_name = ""
         path = "./www" + path
-        print("PATH: " + path + "\n")
         if os.path.isdir(path):
             file_name = "index.html"
+            path += file_name
         elif os.path.isfile(path):
             file_name = path.split("/")[-1]
         else:
@@ -84,19 +84,21 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
         # Append content type to response
         content_type = "Content-Type: "
-        #if len(path.split(".")) >= 2:
-        file_type = file_name.split(".")[1]
-        if file_type == "html":
-            content_type += "text/html; charset=utf-8"
-        elif file_type == "css":
-            content_type += "text/css; charset=utf-8"
+        if len(file_name.split(".")) > 1:
+            file_type = file_name.split(".")[1]
+            if file_type == "html":
+                content_type += "text/html; charset=utf-8"
+            elif file_type == "css":
+                content_type += "text/css; charset=utf-8"
+        else:
+            content_type += "text/plain; charset=utf-8"
         content_type += "\r\n"
 
         # TODO: Append content length to response
 
         # TODO: Get the actual content
-        content = ""
-
+        file = open(path, "r")
+        content = "\r\n" + file.read()
         response +=  status + content_type + content
         self.request.sendall(bytearray(response, "utf-8"))
         return
