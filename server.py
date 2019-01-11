@@ -30,6 +30,7 @@ import os
 
 class MyWebServer(socketserver.BaseRequestHandler):
 
+
     def handle(self):
         self.data = self.request.recv(1024).strip()
         print("Got a request of: %s\n" % self.data)
@@ -57,23 +58,24 @@ class MyWebServer(socketserver.BaseRequestHandler):
         ########################################################################
 
         # Determine if we can process the request method
-        if not is_method_accepted(method):
+        if not self.is_method_accepted(method):
             status = "405 Method Not Allowed\r\n"
             response =  protocol + " " + status
             self.request.sendall(bytearray(response, "utf-8"))
             return
 
         # Determine if the file requested exists
-        if not file_or_dir_exists(url_path) or is_illegal_directory(url_path):
+        if not self.file_or_dir_exists(url_path) or \
+               self.is_illegal_directory(url_path):
             status = "404 Not Found\r\n"
             response =  protocol + " " + status
             self.request.sendall(bytearray(response, "utf-8"))
             return
 
         # Determine the localized path to the requested file
-        local_path = get_local_path_to_file(url_path)
-        content_type = get_content_type(local_path)
-        content = get_content(local_path)
+        local_path = self.get_local_path_to_file(url_path)
+        content_type = self.get_content_type(local_path)
+        content = self.get_content(local_path)
 
         # The request method and requested file are valid
         status = "200 OK\r\n"
@@ -81,32 +83,37 @@ class MyWebServer(socketserver.BaseRequestHandler):
         self.request.sendall(bytearray(response, "utf-8"))
         return
 
-def get_content_type(local_path):
+
+    def get_content_type(self, local_path):
         content_type = "Content-Type: "
-        if len(local_path.split(".")) > 1:
-            file_type = local_path.split(".")[1]
+        file_type = self.get_file_type(local_path)
+        if file_type != None:
             if file_type == "html":
                 content_type += "text/html; charset=utf-8"
             elif file_type == "css":
                 content_type += "text/css; charset=utf-8"
         else:
+            print("\n\n" + local_path + "\n\n")
             content_type += "text/plain; charset=utf-8"
-        content_type += "\r\n"
-        return content_type
+        return content_type + "\r\n"
 
-def get_content(local_path):
+
+    def get_content(self, local_path):
         return "\r\n" + open(local_path, "r").read()
 
-# Can be modified by changing the prepended string on the local_path variable
-def get_local_path_to_file(url_path):
-    local_path = "./www" + url_path
-    if os.path.isfile(local_path):
-        return local_path
-    else:
-        assert(os.path.isdir(local_path))
-        return local_path + "index.html"
 
-def get_file_name(url_path):
+    # Can be modified by changing the prepended string on the local_path
+    def get_local_path_to_file(self, url_path):
+        local_path = "./www" + url_path
+        if os.path.isfile(local_path):
+            return local_path
+        else:
+            assert(os.path.isdir(local_path))
+            print("WAS DIR: " + local_path + "index.html")
+            return local_path + "index.html"
+
+
+    def get_file_name(self, url_path):
         file_name = ""
         local_path = "./www" + url_path
         if os.path.isdir(local_path):
@@ -116,33 +123,45 @@ def get_file_name(url_path):
             file_name = path.split("/")[-1]
         return file_name
 
-def file_or_dir_exists(url_path):
+
+    def file_or_dir_exists(self, url_path):
         local_path = "./www" + url_path
         if os.path.isdir(local_path) or os.path.isfile(local_path):
             return True
         else:
             return False
 
-# Determine if method is supported by this server
-def is_method_accepted(method):
-    if method == "GET":
-        return True
-    elif method == "PUT":
-        return False
-    elif method == "POST":
-        return False
-    elif method == "DELETE":
-        return False
-    else:
-        return False
 
-# Check for backwards directory access. E.g., /../../..
-def is_illegal_directory(url_path):
-    dirs = url_path.split("/")
-    if ".." in dirs:
-        return True
-    else:
-        return False
+    # Determine if method is supported by this server
+    def is_method_accepted(self, method):
+        if method == "GET":
+            return True
+        elif method == "PUT":
+            return False
+        elif method == "POST":
+            return False
+        elif method == "DELETE":
+            return False
+        else:
+            return False
+
+
+    # Check for backwards directory access. E.g., /../../..
+    def is_illegal_directory(self, url_path):
+        dirs = url_path.split("/")
+        if ".." in dirs:
+            return True
+        else:
+            return False
+
+
+    def get_file_type(self, local_path):
+        if len(local_path.strip(".").split(".")) > 1: # Has a type
+            print("TYPE: " + local_path.strip(".").split(".")[1] + "\n")
+            return local_path.strip(".").split(".")[1]
+        else:
+            return None
+
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
