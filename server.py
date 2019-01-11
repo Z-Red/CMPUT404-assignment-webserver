@@ -2,7 +2,7 @@
 import socketserver
 import os
 
-# Copyright 2013 Abram Hindle, Eddie Antonio Santos
+# Copyright 2013 Abram Hindle, Eddie Antonio Santos, Araien Zach Redfern
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         headers = fields[1:] #ignore the GET / HTTP/1.1
         output = {}
 
-        # Split each line by http field key and value
+        # Split each line by http field key and value, decode to bytes to chars
         for header in headers:
             elements = header.split(b":")
             key = elements[0].decode("ASCII")
@@ -56,36 +56,28 @@ class MyWebServer(socketserver.BaseRequestHandler):
             output[key] = values
         ########################################################################
 
-
-        response = protocol + " "
-
         # Determine if we can process the request method
-        status = " "
-        if (method != "GET"):
+        if (not is_method_accepted(method)):
             status = "405 Method Not Allowed\r\n"
-            self.request.sendall(bytearray(response + status, "utf-8"))
+            response =  protocol + " " + status
+            self.request.sendall(bytearray(response, "utf-8"))
             return
 
         # Determine if the file requested exists
         if not file_or_dir_exists(url_path):
             status = "404 Not Found\r\n"
-            self.request.sendall(bytearray(response + status, "utf-8"))
+            response =  protocol + " " + status
+            self.request.sendall(bytearray(response, "utf-8"))
             return
 
         # Determine the localized path to the requested file
         local_path = get_local_path_to_file(url_path)
+        content_type = get_content_type(local_path)
+        content = get_content(local_path)
 
         # The request method and requested file are valid
         status = "200 OK\r\n"
-
-        # Append content type to response
-        content_type = get_content_type(local_path)
-
-        # TODO: Append content length to response
-
-        # TODO: Get the actual content
-        content = get_content(local_path)
-        response +=  status + content_type + content
+        response =  protocol + " " + status + content_type + content
         self.request.sendall(bytearray(response, "utf-8"))
         return
 
@@ -131,6 +123,18 @@ def file_or_dir_exists(url_path):
             return False
 
 # TODO: Add check for method acceptance (for future applications)
+def is_method_accepted(method):
+
+    if (method == "GET"):
+        return True
+    elif (method == "PUT"):
+        return False
+    elif (method == "POST"):
+        return False
+    elif (method == "DELETE"):
+        return False
+    else:
+        return False
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
