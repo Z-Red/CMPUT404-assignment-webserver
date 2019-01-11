@@ -83,16 +83,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         status = "200 OK\r\n"
 
         # Append content type to response
-        content_type = "Content-Type: "
-        if len(file_name.split(".")) > 1:
-            file_type = file_name.split(".")[1]
-            if file_type == "html":
-                content_type += "text/html; charset=utf-8"
-            elif file_type == "css":
-                content_type += "text/css; charset=utf-8"
-        else:
-            content_type += "text/plain; charset=utf-8"
-        content_type += "\r\n"
+        content_type = get_content_type(file_name)
 
         # TODO: Append content length to response
 
@@ -103,6 +94,19 @@ class MyWebServer(socketserver.BaseRequestHandler):
         self.request.sendall(bytearray(response, "utf-8"))
         return
 
+def get_content_type(file_name):
+
+        content_type = "Content-Type: "
+        if len(file_name.split(".")) > 1:
+            file_type = file_name.split(".")[1]
+            if file_type == "html":
+                content_type += "text/html; charset=utf-8"
+            elif file_type == "css":
+                content_type += "text/css; charset=utf-8"
+        else:
+            content_type += "text/plain; charset=utf-8"
+        content_type += "\r\n"
+        return content_type
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
