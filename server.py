@@ -88,14 +88,12 @@ class MyWebServer(socketserver.BaseRequestHandler):
         # TODO: Append content length to response
 
         # TODO: Get the actual content
-        file = open(path, "r")
-        content = "\r\n" + file.read()
+        content = get_content(path)
         response +=  status + content_type + content
         self.request.sendall(bytearray(response, "utf-8"))
         return
 
 def get_content_type(file_name):
-
         content_type = "Content-Type: "
         if len(file_name.split(".")) > 1:
             file_type = file_name.split(".")[1]
@@ -107,6 +105,9 @@ def get_content_type(file_name):
             content_type += "text/plain; charset=utf-8"
         content_type += "\r\n"
         return content_type
+
+def get_content(path):
+        return "\r\n" + open(path, "r").read()
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
