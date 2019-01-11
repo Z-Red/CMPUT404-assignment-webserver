@@ -57,14 +57,14 @@ class MyWebServer(socketserver.BaseRequestHandler):
         ########################################################################
 
         # Determine if we can process the request method
-        if (not is_method_accepted(method)):
+        if not is_method_accepted(method):
             status = "405 Method Not Allowed\r\n"
             response =  protocol + " " + status
             self.request.sendall(bytearray(response, "utf-8"))
             return
 
         # Determine if the file requested exists
-        if not file_or_dir_exists(url_path):
+        if not file_or_dir_exists(url_path) or is_illegal_directory(url_path):
             status = "404 Not Found\r\n"
             response =  protocol + " " + status
             self.request.sendall(bytearray(response, "utf-8"))
@@ -97,6 +97,7 @@ def get_content_type(local_path):
 def get_content(local_path):
         return "\r\n" + open(local_path, "r").read()
 
+# Can be modified by changing the prepended string on the local_path variable
 def get_local_path_to_file(url_path):
     local_path = "./www" + url_path
     if os.path.isfile(local_path):
@@ -122,17 +123,24 @@ def file_or_dir_exists(url_path):
         else:
             return False
 
-# TODO: Add check for method acceptance (for future applications)
+# Determine if method is supported by this server
 def is_method_accepted(method):
-
-    if (method == "GET"):
+    if method == "GET":
         return True
-    elif (method == "PUT"):
+    elif method == "PUT":
         return False
-    elif (method == "POST"):
+    elif method == "POST":
         return False
-    elif (method == "DELETE"):
+    elif method == "DELETE":
         return False
+    else:
+        return False
+
+# Check for backwards directory access. E.g., /../../..
+def is_illegal_directory(url_path):
+    dirs = url_path.split("/")
+    if ".." in dirs:
+        return True
     else:
         return False
 
