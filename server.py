@@ -33,14 +33,15 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
     def handle(self):
         self.data = self.request.recv(1024).strip()
-        print("Got a request of: %s\n" % self.data)
 
-        # TODO: NEED PROPER CITATION
+        # Uncomment to view requests in terminal
+        #print("Got a request of: %s\n" % self.data)
+
         # The following section has been adapted from the following...
         # Source: StackOverflow, https://stackoverflow.com/questions/39090366/how-to-parse-raw-http-request-in-python-3
-        # License:
         # Author: Liam Kelly, https://stackoverflow.com/users/1987437/liam-kelly
-        # Date: Thursday, January 10, 2019
+        # Date Taken: Thursday, January 10, 2019
+        # License: MIT License
         ########################################################################
         fields = self.data.split(b"\r\n")
         method, url_path, protocol = fields[0].decode("ASCII").split(" ")
@@ -93,7 +94,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
             elif file_type == "css":
                 content_type += "text/css; charset=utf-8"
         else:
-            print("\n\n" + local_path + "\n\n")
             content_type += "text/plain; charset=utf-8"
         return content_type + "\r\n"
 
@@ -109,7 +109,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
             return local_path
         else:
             assert(os.path.isdir(local_path))
-            print("WAS DIR: " + local_path + "index.html")
             return local_path + "index.html"
 
 
@@ -157,7 +156,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
     def get_file_type(self, local_path):
         if len(local_path.strip(".").split(".")) > 1: # Has a type
-            print("TYPE: " + local_path.strip(".").split(".")[1] + "\n")
             return local_path.strip(".").split(".")[1]
         else:
             return None
